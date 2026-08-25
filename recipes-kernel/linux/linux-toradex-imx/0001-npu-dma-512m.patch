@@ -1,0 +1,31 @@
+From: Sebastien Taylor <sebastien@au-zone.com>
+Date: Wed, 23 Jul 2026 00:00:00 +0000
+Subject: [PATCH] arm64: dts: imx95-verdin: grow npu-dma pool to 512 MiB
+
+The Neutron NPU on Verdin i.MX95 is bound to a dedicated `npu-dma`
+reserved-memory CMA pool (via `memory-region = <&npu_dma>` on the
+&neutron node). The default 128 MiB is too small for larger models /
+multiple concurrent inference buffers. Bump it to 512 MiB; the module
+has 8 GiB of RAM so the extra CMA is well within budget and keeps the
+GPU's 960 MiB `linux,cma` pool isolated from NPU allocations.
+
+Upstream-Status: Inappropriate [Toradex Verdin iMX95 board customization]
+
+Signed-off-by: Sebastien Taylor <sebastien@au-zone.com>
+---
+ arch/arm64/boot/dts/freescale/imx95-verdin.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx95-verdin.dtsi b/arch/arm64/boot/dts/freescale/imx95-verdin.dtsi
+index f7d7075fec81..90b376026d73 100644
+--- a/arch/arm64/boot/dts/freescale/imx95-verdin.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx95-verdin.dtsi
+@@ -175,7 +175,7 @@ m7_reserved: memory@80000000 {
+
+ 		npu_dma: npu-dma {
+ 			compatible = "shared-dma-pool";
+-			size = <0x0 0x8000000>;
++			size = <0x0 0x20000000>;
+ 			alignment = <0x0 0x100000>;
+ 			reusable;
+ 		};
