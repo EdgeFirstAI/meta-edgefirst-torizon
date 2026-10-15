@@ -18,15 +18,15 @@
 # new overlay model is follow-up work, not a build blocker. The default
 # pool size still applies without this patch.
 #
-# 0001-staging-neutron-export-buffers-as-dma-buf.patch (EDGEAI-1186, from
-# meta-edgefirst's recipes-kernel/linux/linux-imx_%.bbappend, retargeted
-# here from NXP's linux-imx recipe name to Torizon's linux-toradex-imx):
-# replaces anon_inode_getfd() with dma_buf_export() in the Neutron buffer
-# allocator, enabling zero-copy sharing with V4L2/GStreamer/GPU. This is
-# kernel driver C code, not devicetree — unaffected by the kmeta bump.
+# The Neutron DMA-BUF export patch (0001) and its DMA_BUF namespace import
+# (0003) are carried by meta-edgefirst for NXP's raw linux-imx recipe; they
+# are reused from there rather than copied. They apply to the 6.12 kernel
+# series that both NXP walnascar and linux-toradex-imx are built from.
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
+EDGEFIRST_KERNEL_PATCHES = "${@next((l for l in d.getVar('BBLAYERS').split() if l.endswith('/meta-edgefirst')), '')}/recipes-kernel/linux/files"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:${EDGEFIRST_KERNEL_PATCHES}:"
 
 SRC_URI:append:verdin-imx95 = " \
     file://0001-staging-neutron-export-buffers-as-dma-buf.patch \
+    file://0003-staging-neutron-import-dma-buf-namespace.patch \
 "

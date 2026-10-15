@@ -11,7 +11,16 @@
 # find the file and do_populate_lic fails with a fatal QA error, even
 # though do_fetch/do_unpack report success.
 #
-# destsuffix is a git fetcher URL parameter, not a variable flag —
-# re-assert the full SRC_URI (same URL/branch meta-edgefirst sets) with
-# destsuffix added, rather than trying to patch it in via SRC_URI[destsuffix].
-SRC_URI = "git://github.com/EdgeFirstAI/tim-vx-imx.git;protocol=https;branch=edgefirst-1.2.3;destsuffix=${BP}"
+# meta-edgefirst picks SRC_URI (branch/SRCREV) from an anonymous python
+# function keyed on LAYERSERIES_CORENAMES. Anonymous functions all run
+# in a later parsing phase, after every plain variable assignment in the
+# whole recipe+bbappend stack — so a plain SRC_URI assignment here, even
+# from this higher-priority layer, gets applied first and is then
+# clobbered when meta-edgefirst's anonymous function runs. This must
+# also be an anonymous function (parsed after meta-edgefirst's, so it
+# runs after it in the same later phase) that appends destsuffix to
+# whatever SRC_URI meta-edgefirst already picked, instead of a plain
+# assignment that duplicates its branch/SRCREV selection.
+python () {
+    d.setVar("SRC_URI", d.getVar("SRC_URI") + ";destsuffix=${BP}")
+}
