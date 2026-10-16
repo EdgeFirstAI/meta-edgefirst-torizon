@@ -20,7 +20,6 @@ This layer carries only what depends on Torizon or Toradex naming and convention
   The patches are taken from the `meta-edgefirst` checkout rather than copied.
   `0001-npu-dma-512m.patch` (a 512 MiB Neutron CMA pool) is kept in the tree but not applied.
 - `recipes-foundation/tim-vx/tim-vx_%.bbappend` aligns the unpack directory with Torizon's `S`.
-- `recipes-libraries/tvm/tvm_%.bbappend` fixes `S` for `meta-imx-ml`'s tvm recipe.
 - `recipes-sota/aktualizr-torizon/aktualizr-torizon_git.bbappend` moves aktualizr to a revision that builds against the pinned Boost.
 
 ## Usage
