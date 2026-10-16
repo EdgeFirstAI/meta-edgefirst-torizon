@@ -18,7 +18,7 @@ This layer carries only what depends on Torizon or Toradex naming and convention
   The `torizon-docker` bbappend also sets the OSTree branch name for EdgeFirst builds.
 - `recipes-kernel/linux/linux-toradex-imx_%.bbappend` applies `meta-edgefirst`'s Neutron dma-buf patches to Toradex's kernel recipe, which `meta-edgefirst`'s `linux-imx` bbappend never matches.
   The patches are taken from the `meta-edgefirst` checkout rather than copied.
-  `0001-npu-dma-512m.patch` (a 512 MiB Neutron CMA pool) is kept in the tree but not applied.
+- `recipes-kernel/linux/device-tree-overlays-imx_%.bbappend` builds `verdin-imx95_efpi-npu-dma-512m_overlay.dtbo`, which raises the `/reserved-memory/npu-dma` pool used by the Neutron NPU from 128 MiB to 512 MiB, and adds it to `overlays.txt` so it is applied at boot.
 - `recipes-foundation/tim-vx/tim-vx_%.bbappend` aligns the unpack directory with Torizon's `S`.
 - `recipes-foundation/tflite-vx-delegate` and `recipes-foundation/tensorflow-lite-neutron-delegate` build the VX and Neutron delegates from the rolling `edgefirst` branches of their forks instead of the frozen `edgefirst-1.2.3` branches `meta-edgefirst` selects for walnascar. `litert-vx-delegate` is not overridden because the new branch needs the LiteRT 6.18 layout, and no image installs it.
 - `recipes-sota/aktualizr-torizon/aktualizr-torizon_git.bbappend` moves aktualizr to a revision that builds against the pinned Boost.

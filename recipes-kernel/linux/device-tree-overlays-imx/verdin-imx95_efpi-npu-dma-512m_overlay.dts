@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "toradex,verdin-imx95";
+
+	/* Grow the Neutron NPU dma pool from 128 MiB to 512 MiB. */
+	fragment@0 {
+		target-path = "/reserved-memory/npu-dma";
+
+		__overlay__ {
+			size = <0x00 0x20000000>;
+		};
+	};
+};
