@@ -14,8 +14,9 @@ This layer carries only what depends on Torizon or Toradex naming and convention
 ## Contents
 
 - `recipes-core/packagegroups/packagegroup-edgefirst-torizon.bb` composes `packagegroup-edgefirst`, `packagegroup-edgefirst-npu` and `packagegroup-edgefirst-studio` from `meta-edgefirst`.
-- `recipes-images/images/torizon-minimal.bbappend` and `torizon-docker.bbappend` install that packagegroup into the Torizon images.
-  The `torizon-docker` bbappend also sets the OSTree branch name for EdgeFirst builds.
+- `recipes-images/images/torizon-edgefirst.bb` is the EdgeFirst image.
+  It requires Toradex's `torizon-docker` recipe, or `torizon-minimal` when `EDGEFIRST_TORIZON_BASE = "minimal"` is set in `local.conf`, installs that packagegroup, and sets the OSTree branch to `0/<machine>/torizon/edgefirst/<purpose>` with `develop`, `testing` or `release` as the purpose.
+  The stock `torizon-docker` and `torizon-minimal` images build unmodified.
 - `recipes-kernel/linux/linux-toradex-imx_%.bbappend` applies `meta-edgefirst`'s Neutron dma-buf patches to Toradex's kernel recipe, which `meta-edgefirst`'s `linux-imx` bbappend never matches.
   The patches are taken from the `meta-edgefirst` checkout rather than copied.
 - `recipes-kernel/linux/device-tree-overlays-imx_%.bbappend` builds `verdin-imx95_efpi-npu-dma-512m_overlay.dtbo`, which raises the `/reserved-memory/npu-dma` pool used by the Neutron NPU from 128 MiB to 512 MiB, and adds it to `overlays.txt` so it is applied at boot.
@@ -25,6 +26,7 @@ This layer carries only what depends on Torizon or Toradex naming and convention
 
 ## Usage
 
+Build with `bitbake torizon-edgefirst`.
 Select this layer through the manifest on the `torizon` branch of `EdgeFirstAI/yocto`, which also pins `meta-edgefirst` and the Toradex layers.
 
 ## License
