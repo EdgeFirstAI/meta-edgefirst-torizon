@@ -7,6 +7,8 @@ Enhance the neutron IRQ driver to support suspend and resume context,
 Introduce a module parameter to configure whether inference jobs use IRQ
 or polling mode.
 
+Upstream-Status: Backport [https://github.com/nxp-imx/linux-imx/commit/8f8f739f1093326acf76d3404cba377bbca3fb24]
+
 Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
 Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
 Acked-by: Peng Fan <peng.fan@nxp.com>

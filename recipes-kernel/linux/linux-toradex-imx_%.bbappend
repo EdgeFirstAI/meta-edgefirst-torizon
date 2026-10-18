@@ -17,6 +17,14 @@
 # 2.2.0. 0012 retries the remoteproc lookup that can lose a race with
 # imx_neutron_rproc at boot and otherwise leaves a NULL handle that the first
 # open of /dev/neutron0 dereferences.
+#
+# eIQ Neutron SDK 3.2.x firmware, which meta-edgefirst installs, replies 0xA1
+# to a mailbox reset where this driver expects 0x0, so every inference takes
+# the failed-reset path and reloads the firmware. 0014 is NXP's reworked
+# handshake (a7dcf8975208), the same patch meta-edgefirst-phytec applies to
+# PHYTEC's 6.18.20 kernel. It is a version lock: the kernel then requires 3.2.x
+# firmware. The neutron recipe installs firmware, library and headers from one
+# SDK tree and the image ships them with this kernel, so they cannot diverge.
 
 EDGEFIRST_KERNEL_PATCHES = "${@next((l for l in d.getVar('BBLAYERS').split() if l.endswith('/meta-edgefirst')), '')}/recipes-kernel/linux/files"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:${EDGEFIRST_KERNEL_PATCHES}:"
@@ -28,4 +36,5 @@ SRC_URI:append:verdin-imx95 = " \
     file://0011-neutron-add-mutex-protection-for-send_reset.patch \
     file://0012-neutron-fix-rproc-probe-race-null-deref.patch \
     file://0013-remoteproc-imx_neutron-remove-register-write-verification.patch \
+    file://0014-staging-neutron-rework-driver-firmware-mailbox-handshake.patch \
 "

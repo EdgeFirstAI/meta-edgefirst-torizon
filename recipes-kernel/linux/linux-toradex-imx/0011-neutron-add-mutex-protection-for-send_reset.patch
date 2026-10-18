@@ -10,6 +10,8 @@ race condition if other threads are writing the mailbox concurrently.
 This commit wraps the send_reset call with mutex_lock and mutex_unlock
 to ensure exclusive write to neutron device during the reset sequence.
 
+Upstream-Status: Backport [https://github.com/nxp-imx/linux-imx/commit/9284bff621c993172998648894d6e033cfc7d7af]
+
 Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
 Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
 ---

@@ -13,6 +13,8 @@ failures.
 Remove the post-write read-back checks in neutron_rproc_start() and
 neutron_rproc_stop().
 
+Upstream-Status: Backport [https://github.com/nxp-imx/linux-imx/commit/4e06f731541e50140ad8bfb1a8808d67dda09de6]
+
 Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
 Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
 Acked-by: Jason Liu <jason.hui.liu@nxp.com>
