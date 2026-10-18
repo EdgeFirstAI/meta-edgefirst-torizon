@@ -1,0 +1,46 @@
+From 4e06f731541e50140ad8bfb1a8808d67dda09de6 Mon Sep 17 00:00:00 2001
+From: "Jiwei.Fu" <jiwei.fu@nxp.com>
+Date: Mon, 10 Nov 2025 16:28:12 +0800
+Subject: [PATCH] LF-16577 remoteproc: imx_neutron: Remove register write
+ verification in start/stop
+
+The Neutron firmware now actively manages the Reset Control (SRC) register
+to optimize power consumption and may modify its value after the host
+writes to it. As a result, verifying that the register retains the exact
+value written by the driver is no longer reliable and can cause spurious
+failures.
+
+Remove the post-write read-back checks in neutron_rproc_start() and
+neutron_rproc_stop().
+
+Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
+Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
+Acked-by: Jason Liu <jason.hui.liu@nxp.com>
+---
+ drivers/remoteproc/imx_neutron_rproc.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/remoteproc/imx_neutron_rproc.c b/drivers/remoteproc/imx_neutron_rproc.c
+index 3b190cddd1fd..be76660bd9c5 100644
+--- a/drivers/remoteproc/imx_neutron_rproc.c
++++ b/drivers/remoteproc/imx_neutron_rproc.c
+@@ -85,9 +85,6 @@ static int neutron_rproc_start(struct rproc *rproc)
+ 
+ 	writel(dcfg->src_start, priv->regbase + dcfg->src_reg);
+ 
+-	if (readl(priv->regbase + dcfg->src_reg) != dcfg->src_start)
+-		return -EINVAL;
+-
+ 	return 0;
+ }
+ 
+@@ -98,9 +95,6 @@ static int neutron_rproc_stop(struct rproc *rproc)
+ 
+ 	writel(dcfg->src_stop, priv->regbase + dcfg->src_reg);
+ 
+-	if (readl(priv->regbase + dcfg->src_reg) != dcfg->src_stop)
+-		return -EINVAL;
+-
+ 	return 0;
+ }
+ 

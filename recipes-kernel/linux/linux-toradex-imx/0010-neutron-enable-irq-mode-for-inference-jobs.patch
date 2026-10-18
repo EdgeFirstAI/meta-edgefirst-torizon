@@ -1,0 +1,177 @@
+From 8f8f739f1093326acf76d3404cba377bbca3fb24 Mon Sep 17 00:00:00 2001
+From: "Jiwei.Fu" <jiwei.fu@nxp.com>
+Date: Wed, 23 Jul 2025 15:12:28 +0800
+Subject: [PATCH] AIR-11097 neutron: Enable Neutron IRQ mode for inference jobs
+
+Enhance the neutron IRQ driver to support suspend and resume context,
+Introduce a module parameter to configure whether inference jobs use IRQ
+or polling mode.
+
+Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
+Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
+Acked-by: Peng Fan <peng.fan@nxp.com>
+---
+ drivers/staging/neutron/neutron_device.c    | 10 ++++++++++
+ drivers/staging/neutron/neutron_device.h    |  7 +++++++
+ drivers/staging/neutron/neutron_driver.c    | 14 ++++++++++++++
+ drivers/staging/neutron/neutron_inference.c | 15 ++++++++++++++-
+ drivers/staging/neutron/neutron_mailbox.c   |  6 ++----
+ 5 files changed, 47 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/neutron/neutron_device.c b/drivers/staging/neutron/neutron_device.c
+index 11cfb85ca85b..69fae4e639c4 100644
+--- a/drivers/staging/neutron/neutron_device.c
++++ b/drivers/staging/neutron/neutron_device.c
+@@ -665,6 +665,16 @@ static int neutron_dev_clk_get(struct neutron_device *ndev)
+ 	return ret;
+ }
+ 
++void neutron_irq_enable(struct neutron_device *ndev)
++{
++	u32 val;
++
++	/* Setup irq register */
++	val = readl(ndev->reg_base + INTENA);
++	val |= (SHUTDOWN_IRQ_ENABLE | INFERENCE_DONE_IRQ_ENABLE);
++	writel(val, ndev->reg_base + INTENA);
++}
++
+ int neutron_dev_init(struct neutron_device *ndev,
+ 		     struct device *dev, int irq,
+ 		    struct class *class, dev_t devt)
+diff --git a/drivers/staging/neutron/neutron_device.h b/drivers/staging/neutron/neutron_device.h
+index 9f760d0321d4..395d4c295563 100644
+--- a/drivers/staging/neutron/neutron_device.h
++++ b/drivers/staging/neutron/neutron_device.h
+@@ -67,6 +67,12 @@
+ #define NEUTRON_POWER_OFF    0
+ #define NEUTRON_POWER_ON     1
+ #define SPECIFIC_DMA_POOL      BIT(0)
++#define NEUTRON_USE_IRQ_MODE   BIT(1)
++
++// IRQ
++#define INFERENCE_DONE_IRQ_ENABLE   BIT(1)
++#define MBOX_IRQ_ENABLE             BIT(2)
++#define SHUTDOWN_IRQ_ENABLE         BIT(7)
+ 
+ #define ZENV_CLK_ON         (0x1 << 0)
+ #define COMPUTE_CLK_ON      (0xF << 4)
+@@ -144,6 +150,7 @@ void neutron_memory_sync(struct neutron_device *ndev, dma_addr_t addr,
+ 			 size_t size, enum dma_data_direction dir);
+ void neutron_clk_enable(struct neutron_device *ndev);
+ void neutron_clk_disable(struct neutron_device *ndev);
++void neutron_irq_enable(struct neutron_device *ndev);
+ 
+ #endif /* NEUTRON_DEVICE_H */
+ 
+diff --git a/drivers/staging/neutron/neutron_driver.c b/drivers/staging/neutron/neutron_driver.c
+index e0672d623c20..f622e0c4b1f1 100644
+--- a/drivers/staging/neutron/neutron_driver.c
++++ b/drivers/staging/neutron/neutron_driver.c
+@@ -40,6 +40,11 @@ static int power_mode = POWER_MODE_AUTO;
+ module_param(power_mode, int, 0644);
+ MODULE_PARM_DESC(power_mode, "Power consumption strategy mode, 0:auto balance mode; 1:best performance mode; 2:low power mode");
+ 
++static bool use_irq = true;
++
++module_param(use_irq, bool, 0644);
++MODULE_PARM_DESC(use_irq, "Enable IRQ mode for the inference job, set it to 0 for polling mode.");
++
+ static struct class *neutron_class;
+ static dev_t devt;
+ static DECLARE_BITMAP(minors, MINOR_COUNT);
+@@ -84,6 +89,11 @@ static int neutron_pdev_probe(struct platform_device *pdev)
+ 	if (power_mode == POWER_MODE_PERF)
+ 		ndev->suspend_delay +=  100 * MSEC_PER_SEC;
+ 
++	if (use_irq)
++		ndev->flags |= NEUTRON_USE_IRQ_MODE;
++	else
++		ndev->flags &= (~NEUTRON_USE_IRQ_MODE);
++
+ 	pm_runtime_enable(&pdev->dev);
+ 
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev, ndev->suspend_delay);
+@@ -164,6 +174,10 @@ static int neutron_runtime_resume(struct device *dev)
+ 	if (ndev->power_state == NEUTRON_POWER_ON)
+ 		neutron_rproc_boot(ndev, NULL);
+ 
++	/* Re-enable the IRQ after the system resumes from suspend */
++	if (ndev->flags & NEUTRON_USE_IRQ_MODE)
++		neutron_irq_enable(ndev);
++
+ 	return 0;
+ }
+ #endif
+diff --git a/drivers/staging/neutron/neutron_inference.c b/drivers/staging/neutron/neutron_inference.c
+index d50d8ae01cd1..3b7dbc7d8c48 100644
+--- a/drivers/staging/neutron/neutron_inference.c
++++ b/drivers/staging/neutron/neutron_inference.c
+@@ -281,6 +281,9 @@ static void inference_done_callback(struct work_struct *work)
+ 	if (!inf || IS_ERR(inf))
+ 		return;
+ 
++	if (!kref_read(&inf->kref))
++		return;
++
+ 	neutron_inference_get(inf);
+ 
+ 	/* Update inference job from running to done */
+@@ -290,6 +293,8 @@ static void inference_done_callback(struct work_struct *work)
+ 	ndev = inf->ndev;
+ 	mbox = ndev->mbox;
+ 
++	pm_runtime_get_sync(ndev->dev);
++
+ 	/* Sync the output data for cpu after inference is done */
+ 	neutron_memory_sync(ndev, inf->buf->dma_addr + inf->args.output_offset,
+ 			    inf->args.output_size, DMA_FROM_DEVICE);
+@@ -316,6 +321,8 @@ static void inference_done_callback(struct work_struct *work)
+ 	 */
+ 	else if (ndev->power_mode >= POWER_MODE_LOW)
+ 		neutron_clk_disable(ndev);
++
++	pm_runtime_put_sync(ndev->dev);
+ }
+ 
+ static void neutron_inference_kref_destroy(struct kref *kref)
+@@ -432,8 +439,14 @@ int neutron_inference_create(struct neutron_device *ndev, enum neutron_cmd_type
+ 
+ 	inf->ndev = ndev;
+ 	inf->cmd_type = type;
++
++	/* use irq mode */
++	if (ndev->flags & NEUTRON_USE_IRQ_MODE)
++		inf->poll_mode = false;
++
+ 	/* use polling mode */
+-	inf->poll_mode = true;
++	else
++		inf->poll_mode = true;
+ 
+ 	kref_init(&inf->kref);
+ 	init_waitqueue_head(&inf->waitq);
+diff --git a/drivers/staging/neutron/neutron_mailbox.c b/drivers/staging/neutron/neutron_mailbox.c
+index 171da69ddea8..da167f2d7d6e 100644
+--- a/drivers/staging/neutron/neutron_mailbox.c
++++ b/drivers/staging/neutron/neutron_mailbox.c
+@@ -14,10 +14,6 @@
+ 
+ #define DRIVER_NAME	"imx-neutron-mailbox"
+ 
+-#define INFERENCE_DONE_IRQ_ENABLE	BIT(1)
+-#define MBOX_IRQ_ENABLE			BIT(2)
+-#define SHUTDOWN_IRQ_ENABLE		BIT(7)
+-
+ #define MAX_SEND_MSG_ARGC		4
+ #define MAX_RECV_MSG_ARGC		2
+ #define SEND_MSG_ARG(n)			(MBOX3 + (((n) + 1) << 2))
+@@ -208,6 +204,8 @@ static irqreturn_t mbox_irq_handler(int irq, void *data)
+ 
+ 	/* Clear irq */
+ 	writel(val, mbox->base + INTCLR);
++	/* Clear status via W1C */
++	writel(appstatus, mbox->base + APPSTATUS);
+ 	/* Enable irq again */
+ 	writel(val, mbox->base + INTENA);
+ 

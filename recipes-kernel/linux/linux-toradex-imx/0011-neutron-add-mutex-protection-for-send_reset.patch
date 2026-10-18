@@ -1,0 +1,33 @@
+From 9284bff621c993172998648894d6e033cfc7d7af Mon Sep 17 00:00:00 2001
+From: "Jiwei.Fu" <jiwei.fu@nxp.com>
+Date: Mon, 29 Sep 2025 14:35:50 +0800
+Subject: [PATCH] LF-16016 neutron: Add mutex protection for send_reset()
+
+The send_reset operation in inference_done_callback was being called
+without holding the device mutex (ndev->mutex). This creates a potential
+race condition if other threads are writing the mailbox concurrently.
+
+This commit wraps the send_reset call with mutex_lock and mutex_unlock
+to ensure exclusive write to neutron device during the reset sequence.
+
+Signed-off-by: Jiwei.Fu <jiwei.fu@nxp.com>
+Reviewed-by: Forrest Shi <xuelin.shi@nxp.com>
+---
+ drivers/staging/neutron/neutron_inference.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/staging/neutron/neutron_inference.c b/drivers/staging/neutron/neutron_inference.c
+index 3b7dbc7d8c48..f9dfdb742875 100644
+--- a/drivers/staging/neutron/neutron_inference.c
++++ b/drivers/staging/neutron/neutron_inference.c
+@@ -303,8 +303,10 @@ static void inference_done_callback(struct work_struct *work)
+ 	wake_up_interruptible(&inf->waitq);
+ 
+ 	/* Reset neutron */
++	mutex_lock(&ndev->mutex);
+ 	if (mbox->ops->send_reset(ndev->mbox))
+ 		dev_warn(ndev->dev, "failed to reset neutron state\n");
++	mutex_unlock(&ndev->mutex);
+ 
+ 	dev_dbg(ndev->dev, "inf %x is done\n", inf->args.tensor_offset);
+ 
