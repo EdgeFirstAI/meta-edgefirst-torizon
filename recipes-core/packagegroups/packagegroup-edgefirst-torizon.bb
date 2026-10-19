@@ -14,6 +14,7 @@ RDEPENDS:${PN} = " \
     packagegroup-edgefirst \
     packagegroup-edgefirst-npu \
     packagegroup-edgefirst-studio \
+    edgefirst-ostree-remote \
 "
 
 # GPU userspace the HAL loads at runtime: libEGL.so.1, libGLESv2.so.2 and
