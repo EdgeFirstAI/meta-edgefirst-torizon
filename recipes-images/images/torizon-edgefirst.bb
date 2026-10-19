@@ -1,12 +1,14 @@
-SUMMARY = "Torizon OS with the EdgeFirst Perception Foundation"
-DESCRIPTION = "Toradex Torizon OS plus the EdgeFirst NPU enablement, TensorFlow Lite delegates, edgefirst-client and edgefirst-profiler."
-
 # The Torizon image this one extends, "docker" or "minimal". Set
 # EDGEFIRST_TORIZON_BASE in local.conf to change it; the OSTree branch and
 # the published image name are the same either way.
 EDGEFIRST_TORIZON_BASE ?= "docker"
 
 require recipes-images/images/torizon-${EDGEFIRST_TORIZON_BASE}.bb
+
+# The required Torizon recipe sets both, and the TEZI image metadata is built
+# from them.
+SUMMARY = "Torizon OS with the EdgeFirst Perception Foundation"
+DESCRIPTION = "Toradex Torizon OS plus the EdgeFirst NPU enablement, TensorFlow Lite delegates, edgefirst-client and edgefirst-profiler."
 
 # EdgeFirst Perception Foundation.
 IMAGE_INSTALL:append = " packagegroup-edgefirst-torizon"
@@ -28,11 +30,12 @@ python () {
                                          d.getVar("DISTRO"), purpose))
 }
 
-# create_image_tasks() freezes every variable the commit and ostree tasks
+# create_image_tasks() freezes every variable the commit, ostree and ota tasks
 # reference, except those named in vardepsexclude, before the function above
 # runs. Excluding OSTREE_BRANCHNAME leaves it to expand at task run time.
 IMAGE_CMD:ostreecommit[vardepsexclude] += "OSTREE_BRANCHNAME"
 IMAGE_CMD:ostree[vardepsexclude] += "OSTREE_BRANCHNAME"
+IMAGE_CMD:ota[vardepsexclude] += "OSTREE_BRANCHNAME"
 
 # NetworkManager owns the network interfaces, so networkd manages none and
 # systemd-networkd-wait-online always times out and shows as a failed unit.
