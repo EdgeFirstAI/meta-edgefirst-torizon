@@ -1,0 +1,1 @@
+SUBSYSTEM=="neutron", GROUP="video", MODE="0660"

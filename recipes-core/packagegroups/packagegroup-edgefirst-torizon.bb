@@ -31,3 +31,5 @@ RDEPENDS:${PN}:append:imxmali = " \
     mali-imx-libgles2 \
     mali-imx-libgbm \
 "
+
+RDEPENDS:${PN}:append:mx95-nxp-bsp = " edgefirst-udev-rules"
