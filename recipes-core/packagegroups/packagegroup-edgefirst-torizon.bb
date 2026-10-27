@@ -48,7 +48,6 @@ RDEPENDS:${PN}:append:mx8mp-nxp-bsp = " \
 "
 
 RDEPENDS:${PN}:append:mx95-nxp-bsp = " \
-    libcamera \
-    neo-ipa-uguzzi \
+    packagegroup-edgefirst-camera \
     firmware-imx-vpu-wave \
 "
