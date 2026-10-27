@@ -13,6 +13,10 @@ DESCRIPTION = "Toradex Torizon OS plus the EdgeFirst NPU enablement, TensorFlow 
 # EdgeFirst Perception Foundation.
 IMAGE_INSTALL:append = " packagegroup-edgefirst-torizon"
 
+# seatd hands the display and input devices to members of the seat group, and
+# weston.service runs as the torizon user.
+EXTRA_USERS_PARAMS += "usermod -a -G seat torizon; "
+
 # Toradex names the OSTree branch <major>/<machine>/<distro>/<image>/<purpose>
 # with the recipe name as <image>. Publish under "edgefirst" instead, so the
 # branch is e.g. 0/verdin-imx8mp/torizon/edgefirst/testing, and use "develop"
