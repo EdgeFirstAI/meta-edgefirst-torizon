@@ -1,0 +1,4 @@
+seat:x:970:
+wayland:x:971:
+weston-launch:x:972:
+weston:x:973:
